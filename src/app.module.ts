@@ -4,6 +4,8 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { UsersModule } from './users/users.module.js';
+import { WalletsModule } from './wallets/wallets.module.js';
 
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
@@ -26,7 +28,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     password: configService.get<string>('DB_PASSWORD'),
     database: configService.get<string>('DB_NAME'),
     autoLoadEntities: true,
-    synchronize: true,
+    synchronize: false,
   };
 },
   }),
@@ -35,6 +37,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       appSecret: 'YOUR_APP_SECRET',
       serviceId: 'wallet',
     }),
+    UsersModule,
+    WalletsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
