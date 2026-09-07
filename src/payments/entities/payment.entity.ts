@@ -59,6 +59,15 @@ export class Payment {
   @Column({ type: 'varchar', nullable: true })
   gatewayTransactionId: string | null;
 
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  palizUniqueId: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  palizTrackingId: string | null;
+
+  @Column({ type: 'integer', default: 0 })
+  palizSequenceId: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

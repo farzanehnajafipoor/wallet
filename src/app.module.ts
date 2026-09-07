@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module.js';
 import { WalletsModule } from './wallets/wallets.module.js';
 import { InvoicesModule } from './invoices/invoices.module.js';
 import { PaymentsModule } from './payments/payments.module.js';
+import { PalizWalletModule } from './paliz-wallet/paliz-wallet.module.js';
 
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
@@ -43,6 +44,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     WalletsModule,
     InvoicesModule,
     PaymentsModule,
+    PalizWalletModule,
   ],
   controllers: [AppController],
   providers: [AppService],
