@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { createObserveModule } from '@nestjs/observe';
-import { AppService } from './app.service.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from './users/users.module.js';
@@ -34,11 +33,6 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
   };
 },
   }),
-    ObserveModule.forRoot({
-      appKey: 'YOUR_APP_KEY',
-      appSecret: 'YOUR_APP_SECRET',
-      serviceId: 'wallet',
-    }),
     UsersModule,
     WalletsModule,
     InvoicesModule,
@@ -46,6 +40,6 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     PalizWalletModule,
   ],
   controllers: [],
-  providers: [AppService],
+  providers: [],
 })
 export class AppModule {}

@@ -450,7 +450,6 @@ switch (selectedMethod) {
 
     // =========================================================
     // PALIZ CREATE
-    // sequence = 1
     // =========================================================
 
     console.log(
@@ -487,7 +486,6 @@ switch (selectedMethod) {
 
     // =========================================================
     // PALIZ INFO
-    // sequence = 2
     // =========================================================
 
     console.log(
@@ -515,7 +513,6 @@ switch (selectedMethod) {
         `[Payment][PALIZ] STATUS=firstcommit → COMMIT | paymentId=${payment.id}`,
       );
 
-      // sequence = 3
       await this.palizPaymentService.commitTransfer(
         manager,
         payment,
@@ -537,7 +534,6 @@ switch (selectedMethod) {
     } else {
       // =======================================================
       // CANCEL
-      // sequence = 3
       // =======================================================
 
       console.log(
@@ -615,7 +611,6 @@ switch (selectedMethod) {
 
     // =========================================================
     // PALIZ CREATE
-    // sequence = 1
     // =========================================================
 
     console.log(

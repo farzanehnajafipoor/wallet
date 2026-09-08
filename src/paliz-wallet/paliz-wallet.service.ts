@@ -19,17 +19,8 @@ export class PalizWalletService {
     callback: string;
     reference?: string;
   }) {
-    const from = this.configService.getOrThrow<string>(
-      'PALIZ_WALLET_FROM_ADDRESS',
-    );
-
-    const to = this.configService.getOrThrow<string>(
-      'PALIZ_WALLET_TO_ADDRESS',
-    );
-
-    const currency = this.configService.getOrThrow<string>(
-      'PALIZ_WALLET_CURRENCY',
-    );
+    
+    const { from, to , currency } = this.getWalletConfig();
 
     const payload = {
       unique_id: data.unique_id,
@@ -48,13 +39,7 @@ export class PalizWalletService {
 
     const encryptedPayload = this.encryptionService.encrypt(payload);
 
-    const baseUrl = this.configService.getOrThrow<string>(
-      'PALIZ_WALLET_BASE_URL',
-    );
-
-    const serviceId = this.configService.getOrThrow<string>(
-      'PALIZ_WALLET_SERVICE_ID',
-    );
+   const { baseUrl, serviceId } = this.getWalletConfig();
 
     const response = await firstValueFrom(
       this.httpService.post(
@@ -90,13 +75,7 @@ export class PalizWalletService {
 
     const encryptedPayload = this.encryptionService.encrypt(payload);
 
-    const baseUrl = this.configService.getOrThrow<string>(
-      'PALIZ_WALLET_BASE_URL',
-    );
-
-    const serviceId = this.configService.getOrThrow<string>(
-      'PALIZ_WALLET_SERVICE_ID',
-    );
+    const { baseUrl, serviceId } = this.getWalletConfig();
 
     const response = await firstValueFrom(
       this.httpService.post(
@@ -132,13 +111,7 @@ export class PalizWalletService {
 
     const encryptedPayload = this.encryptionService.encrypt(payload);
 
-    const baseUrl = this.configService.getOrThrow<string>(
-      'PALIZ_WALLET_BASE_URL',
-    );
-
-    const serviceId = this.configService.getOrThrow<string>(
-      'PALIZ_WALLET_SERVICE_ID',
-    );
+   const { baseUrl, serviceId } = this.getWalletConfig();
 
     const response = await firstValueFrom(
       this.httpService.post(
@@ -178,13 +151,7 @@ export class PalizWalletService {
       );
     }
 
-    const baseUrl = this.configService.getOrThrow<string>(
-      'PALIZ_WALLET_BASE_URL',
-    );
-
-    const serviceId = this.configService.getOrThrow<string>(
-      'PALIZ_WALLET_SERVICE_ID',
-    );
+    const { baseUrl } = this.getWalletConfig();
 
     const response = await firstValueFrom(
         this.httpService.post(
@@ -217,13 +184,7 @@ export class PalizWalletService {
     address: string;
   }) {
     
-    const baseUrl = this.configService.getOrThrow<string>(
-      'PALIZ_WALLET_BASE_URL',
-    );
-      const currency = this.configService.getOrThrow<string>(
-        'PALIZ_WALLET_CURRENCY',
-      );
-
+    const { baseUrl, currency } = this.getWalletConfig();
     const payload: Record<string, unknown> = {
       address: data.address,
       currency,
@@ -239,4 +200,23 @@ export class PalizWalletService {
     return response.data;
   }
 
+  private getWalletConfig() {
+  return {
+    baseUrl: this.configService.getOrThrow<string>(
+      'PALIZ_WALLET_BASE_URL',
+    ),
+    serviceId: this.configService.getOrThrow<string>(
+      'PALIZ_WALLET_SERVICE_ID',
+    ),
+    currency: this.configService.getOrThrow<string>(
+        'PALIZ_WALLET_CURRENCY',
+      ),
+    from : this.configService.getOrThrow<string>(
+      'PALIZ_WALLET_FROM_ADDRESS',
+    ),
+    to : this.configService.getOrThrow<string>(
+      'PALIZ_WALLET_TO_ADDRESS',
+    ),
+  };
+}
 }
