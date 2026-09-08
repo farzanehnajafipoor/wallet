@@ -25,4 +25,11 @@ export class User {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @Column({
+    name: 'wallet_address',
+    type: 'varchar',
+    nullable: true,
+  })
+  walletAddress: string | null;
 }

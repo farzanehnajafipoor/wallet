@@ -16,7 +16,9 @@ export enum PaymentMethod {
 }
 
 export enum PaymentStatus {
-  PENDING = 'PENDING',
+  INITIATED = 'INITIATED',
+  WALLET_RESERVED = 'WALLET_RESERVED',
+  AWAITING_GATEWAY = 'AWAITING_GATEWAY',
   SUCCESS = 'SUCCESS',
   FAILED = 'FAILED',
   REFUNDED = 'REFUNDED',
@@ -40,25 +42,32 @@ export class Payment {
   })
   method: PaymentMethod;
 
+  // bigint columns come back from Postgres/TypeORM as strings, not numbers —
+  // typing them as string here avoids silent precision loss on large values.
   @Column({ type: 'bigint' })
-  amount: number;
+  amount: string;
 
   @Column({ type: 'bigint', default: 0 })
-  walletAmount: number;
+  walletAmount: string;
 
   @Column({ type: 'bigint', default: 0 })
-  gatewayAmount: number;
+  gatewayAmount: string;
 
   @Column({
     type: 'enum',
     enum: PaymentStatus,
-    default: PaymentStatus.PENDING,
+    default: PaymentStatus.INITIATED,
   })
   status: PaymentStatus;
 
+  // Gateway (Shepa or any future provider) fields
   @Column({ type: 'varchar', nullable: true })
   gatewayTransactionId: string | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  gatewayRedirectUrl: string | null;
+
+  // Paliz wallet fields
   @Column({ type: 'varchar', unique: true, nullable: true })
   palizUniqueId: string | null;
 
@@ -66,7 +75,10 @@ export class Payment {
   palizTrackingId: string | null;
 
   @Column({ type: 'integer', default: 0 })
-  palizSequenceId: number;
+  palizLastSequenceId: number;
+
+  @Column({ type: 'varchar', nullable: true })
+  palizTransactionPhrase: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

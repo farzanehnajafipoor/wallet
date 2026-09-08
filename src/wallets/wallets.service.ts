@@ -1,8 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+
+import {
+  Injectable,
+  NotFoundException,
+  BadGatewayException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
 import { User } from '../users/entities/user.entity.js';
 import { Wallet } from './entities/wallet.entity.js';
+import { PalizWalletService } from '../paliz-wallet/paliz-wallet.service.js';
+
 
 @Injectable()
 export class WalletsService {
@@ -12,9 +20,11 @@ export class WalletsService {
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+
+    private readonly palizWalletService: PalizWalletService,
   ) {}
 
-  async findOrCreateWallet(mobile: string): Promise<Wallet> {
+  async getMyWalletBalance(mobile: string) {
     const user = await this.userRepository.findOne({
       where: { mobile },
     });
@@ -23,39 +33,57 @@ export class WalletsService {
       throw new NotFoundException('User not found');
     }
 
-    const existingWallet = await this.walletRepository.findOne({
-      where: { userId: user.id },
-    });
-
-    if (existingWallet) {
-      return existingWallet;
-    }
-
-    const wallet = this.walletRepository.create({
-      userId: user.id,
-      balance: 0,
-    });
-
-    return this.walletRepository.save(wallet);
+    return this.refreshWalletBalance(user.id);
   }
 
-  async getWalletByMobile(mobile: string): Promise<Wallet> {
+  private async getPalizWalletBalance(
+    walletAddress: string,
+  ): Promise<number> {
+    try {
+       const palizResponse = await this.palizWalletService.getBalance({
+          address: walletAddress
+        });
+        return palizResponse.data.wallet_balance
+
+    } catch (error) {
+      throw new BadGatewayException(
+        'Unable to get wallet balance from Paliz',
+      );
+    }
+  }
+
+  async refreshWalletBalance(userId: string): Promise<number> {
     const user = await this.userRepository.findOne({
-      where: { mobile },
+      where: { id: userId },
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    const wallet = await this.walletRepository.findOne({
-      where: { userId: user.id },
+    if (!user.walletAddress) {
+      throw new NotFoundException('User wallet address not found');
+    }
+
+    const balance = await this.getPalizWalletBalance(
+      user.walletAddress,
+    );
+
+    let wallet = await this.walletRepository.findOne({
+      where: { userId },
     });
 
     if (!wallet) {
-      throw new NotFoundException('Wallet not found');
+      wallet = this.walletRepository.create({
+        userId,
+        balance: balance.toString(),
+      });
+    } else {
+      wallet.balance = balance.toString();
     }
 
-    return wallet;
+    await this.walletRepository.save(wallet);
+
+    return balance;
   }
 }

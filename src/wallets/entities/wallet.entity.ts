@@ -21,8 +21,10 @@ export class Wallet {
   @Column({ type: 'uuid' })
   userId: string;
 
+  // bigint columns come back from Postgres/TypeORM as strings, not numbers —
+  // typing this as string here avoids silent precision loss on large balances.
   @Column({ type: 'bigint', default: 0 })
-  balance: number;
+  balance: string;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -1,18 +1,24 @@
 import { Body, Controller, Post, Get, Param } from '@nestjs/common';
-import { CreatePaymentDto } from './dto/create-payment.dto.js';
-import { PaymentsService } from './payments.service.js';
+import { PayInvoiceDto } from './dto/pay-invoice.dto.js';
+import { PaymentOrchestratorService } from './payment-orchestrator.service.js';
 
 @Controller('payments')
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(
+    private readonly paymentOrchestratorService: PaymentOrchestratorService,
+  ) {}
 
-  @Post()
-  createPayment(@Body() dto: CreatePaymentDto) {
-    return this.paymentsService.createPayment(dto);
+  
+ @Post()
+pay(@Body() dto: PayInvoiceDto) {
+  return this.paymentOrchestratorService.pay(
+    dto.invoiceId,
+    dto.paymentMethod,
+  );
+}
+
+  @Get(':id/paliz-info')
+  getPalizInfo(@Param('id') id: string) {
+    return this.paymentOrchestratorService.getPalizInfo(id);
   }
-
-   @Get(':id/paliz-info')
-    getPalizInfo(@Param('id') id: string) {
-      return this.paymentsService.getPalizInfo(id);
-    }
 }

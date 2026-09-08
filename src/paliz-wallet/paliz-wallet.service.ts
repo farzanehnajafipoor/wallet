@@ -70,6 +70,90 @@ export class PalizWalletService {
     return response.data;
   }
 
+  async commitTransfer(data: {
+    unique_id: string;
+    sequence_id: number;
+    transaction_phrase: string;
+  }) {
+    
+    const payload = {
+      unique_id: data.unique_id,
+      sequence_id: data.sequence_id,
+      action: 'commit',
+      data: {
+        transaction_phrase : data.transaction_phrase,
+        unique_id : data.unique_id,
+        sequence_id : data.sequence_id
+      },
+      time: new Date().toISOString(),
+    };
+
+    const encryptedPayload = this.encryptionService.encrypt(payload);
+
+    const baseUrl = this.configService.getOrThrow<string>(
+      'PALIZ_WALLET_BASE_URL',
+    );
+
+    const serviceId = this.configService.getOrThrow<string>(
+      'PALIZ_WALLET_SERVICE_ID',
+    );
+
+    const response = await firstValueFrom(
+      this.httpService.post(
+        `${baseUrl}/action`,
+        {
+          payload: encryptedPayload,
+          serviceId,
+        },
+        this.getAuthConfig(),
+      ),
+    );
+
+    return response.data;
+  }
+
+  async cancelTransfer(data: {
+    unique_id: string;
+    sequence_id: number;
+    transaction_phrase: string;
+  }) {
+    
+    const payload = {
+      unique_id: data.unique_id,
+      sequence_id: data.sequence_id,
+      action: 'cancel',
+      data: {
+        transaction_phrase : data.transaction_phrase,
+        unique_id : data.unique_id,
+        sequence_id : data.sequence_id
+      },
+      time: new Date().toISOString(),
+    };
+
+    const encryptedPayload = this.encryptionService.encrypt(payload);
+
+    const baseUrl = this.configService.getOrThrow<string>(
+      'PALIZ_WALLET_BASE_URL',
+    );
+
+    const serviceId = this.configService.getOrThrow<string>(
+      'PALIZ_WALLET_SERVICE_ID',
+    );
+
+    const response = await firstValueFrom(
+      this.httpService.post(
+        `${baseUrl}/action`,
+        {
+          payload: encryptedPayload,
+          serviceId,
+        },
+        this.getAuthConfig(),
+      ),
+    );
+
+    return response.data;
+  }
+
   async getTransferInfo(data: {
     tracking_id?: string;
     unique_id?: string;
@@ -93,8 +177,6 @@ export class PalizWalletService {
         'Either tracking_id or unique_id + sequence_id is required',
       );
     }
-
-    //const encryptedPayload = this.encryptionService.encrypt(payload);
 
     const baseUrl = this.configService.getOrThrow<string>(
       'PALIZ_WALLET_BASE_URL',
@@ -130,4 +212,31 @@ export class PalizWalletService {
       },
     };
   }
+
+  async getBalance(data: {
+    address: string;
+  }) {
+    
+    const baseUrl = this.configService.getOrThrow<string>(
+      'PALIZ_WALLET_BASE_URL',
+    );
+      const currency = this.configService.getOrThrow<string>(
+        'PALIZ_WALLET_CURRENCY',
+      );
+
+    const payload: Record<string, unknown> = {
+      address: data.address,
+      currency,
+    };
+
+    const response = await firstValueFrom(
+        this.httpService.post(
+        `${baseUrl}/balance`,
+        payload,
+        this.getAuthConfig(),
+        ),
+    );
+    return response.data;
+  }
+
 }
