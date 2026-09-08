@@ -10,15 +10,11 @@ export class PaymentsController {
 
   
  @Post()
-pay(@Body() dto: PayInvoiceDto) {
-  return this.paymentOrchestratorService.pay(
-    dto.invoiceId,
-    dto.paymentMethod,
-  );
-}
-
-  @Get(':id/paliz-info')
-  getPalizInfo(@Param('id') id: string) {
-    return this.paymentOrchestratorService.getPalizInfo(id);
+  pay(@Body() dto: PayInvoiceDto) {
+    return this.paymentOrchestratorService.pay(
+      dto.invoiceId,
+      dto.paymentMethod,
+    );
   }
+
 }

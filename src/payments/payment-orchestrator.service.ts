@@ -604,14 +604,14 @@ switch (selectedMethod) {
       `[Payment][COMBINED] Reserving wallet | oldBalance=${oldWalletBalance} | amount=${walletAmount} | newBalance=${newWalletBalance}`,
     );
 
-    wallet.balance =
-      newWalletBalance.toString();
+    // wallet.balance =
+    //   newWalletBalance.toString();
 
-    await manager.save(wallet);
+    // await manager.save(wallet);
 
-    console.log(
-      `[Payment][COMBINED] Wallet balance updated`,
-    );
+    // console.log(
+    //   `[Payment][COMBINED] Wallet balance updated`,
+    // );
 
     // =========================================================
     // PALIZ CREATE
