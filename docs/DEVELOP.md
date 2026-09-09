@@ -1,114 +1,144 @@
-===========
-How to continue development, and what's planned for future work.
+
+The following items should be added or completed before the application is considered fully production-ready.
+
+---
+
+## 1. Authentication, Authorization & Request Validation — High Priority
+
+The application should have proper authentication and authorization before being exposed to production traffic.
 
 
-1. IMMEDIATE NEXT STEPS (completes current scope)
------------------------------------------------------
+## 2. Centralized Logging Service
 
-a) Paliz callback controller
-   - Add an endpoint matching the callback URL already built into
-     PalizPaymentService.createTransfer():
-       {APP_BASE_URL}/payments/paliz/callback/:paymentId
-   - Should verify the callback payload (check Paliz docs for
-     signature/auth requirements), load the Payment by :paymentId,
-     and move it from AWAITING/PENDING state to SUCCESS/FAILED —
-     replacing (or backing up) the current polling-based
-     getTransferInfo-after-1500ms approach in handleWalletPayment.
+A dedicated centralized logging solution should be integrated.
 
-b) Shepa (gateway) callback controller
-   - Add an endpoint matching:
-       {APP_BASE_URL}/payments/gateway/callback/:paymentId
-   - Verify payload against Shepa's callback contract, mark Payment
-     AWAITING_GATEWAY -> SUCCESS/FAILED, update Invoice status
-     accordingly.
+The current use of `Logger` and `console.log` is sufficient for development but should be improved for production.
 
-c) Invoice fulfillment endpoint
-   - POST endpoint to transition Invoice from NOT_FULFILLED to
-     FULFILLED after payment SUCCESS is confirmed.
-   - Should be idempotent — calling it twice on an already-fulfilled
-     invoice should be a no-op, not an error.
+A centralized logging solution could be based on:
 
-d) Refund endpoint
-   - [TBD: confirm whether refunds go back through Paliz
-     (cancelTransfer / a dedicated refund action) or are gateway-side
-     (Shepa refund API) or both, depending on original payment
-     method.]
-   - Should record a new PalizTransfer / gateway record rather than
-     mutating the original payment record, to preserve the audit
-     trail.
+* ELK / Elasticsearch + Kibana
+* Grafana Loki
+* Datadog
+* Another company-approved logging platform
 
-e) Demo wallet seeding endpoint
-   - For test/demo environments only — should be disabled or guarded
-     behind an environment check (e.g. only available when
-     NODE_ENV !== 'production') to avoid accidental use in prod.
+The logging system should support:
 
-f) GET /invoices/:id/payment-options
-   - Returns which of WALLET / GATEWAY / COMBINED are valid for the
-     given invoice, based on current wallet balance vs invoice
-     amount — essentially exposing validatePaymentMethod's logic as
-     a pre-check the client can call before letting the user choose.
+* Structured logs
+* Log levels
+* Request/correlation IDs
+* Payment IDs
+* Transfer IDs
+* External provider information
+* Error tracking
+* Searching across application instances
 
+`console.log` should be removed from production payment flows and replaced with structured application logging.
 
-2. FOLLOW-UP / HARDENING (after immediate scope)
------------------------------------------------------
+---
 
-a) Reconciliation job for Paliz transfers
-   - PalizPaymentService.reconcile() already exists as a starting
-     point but isn't wired to anything.
-   - Add a scheduled job (NestJS @Cron or a queue worker) that finds
-     PalizTransfer rows stuck in PENDING/UNKNOWN beyond a threshold
-     (e.g. 5 minutes) and calls reconcile() to resolve them via
-     getTransferInfo, rather than leaving them unresolved
-     indefinitely.
+## 3. Error Monitoring
 
-b) Bring Paliz audit trail into the payment DB transaction
-   - See DESIGN.txt section 5/8 — PalizTransferService currently
-     writes outside PaymentOrchestratorService's transaction. Either:
-       (i) pass the transactional EntityManager through
-           PalizPaymentService -> PalizTransferService, or
-       (ii) explicitly accept eventual consistency and build the
-           reconciliation job (2a) to handle the gap.
-   - Decide and document which approach is intentional.
+An error-monitoring service should be integrated.
 
-c) Retry policy for not_delivered failures
-   - PalizRequestFailedException already distinguishes
-     not_delivered / unknown / rejected. Add an actual retry
-     strategy (e.g. exponential backoff, max attempts) for the
-     not_delivered case specifically, since that's the one case
-     that's unambiguously safe to retry automatically.
+The system should capture:
 
-d) Reduce console.log verbosity in production
-   - The orchestrator currently logs extensively via console.log for
-     debugging. Consider moving to NestJS Logger with log levels, and
-     gating verbose logs behind NODE_ENV/LOG_LEVEL.
+* Unexpected exceptions
+* Stack traces
+* Request context
+* Environment
+* Error frequency
+* Critical payment failures
 
-e) Tests
-   - [TBD: current test coverage — add unit tests for
-     PaymentOrchestratorService's amount-calculation and validation
-     logic, and for PalizCallCounterService's concurrent-increment
-     behavior specifically, since that's the highest-risk race
-     condition in the system.]
+Possible solutions include:
 
+* Sentry
+* Datadog
+* Another approved monitoring platform
 
-3. FUTURE / LONGER-TERM (beyond current scope)
-----------------------------------------------------
-[TBD — list anything discussed but not yet started, e.g.:
-  - Multi-currency support
-  - Admin dashboard / reporting on payments and Paliz call volume
-  - Support for additional payment gateways beyond Shepa
-  - Rate-limit-aware backoff (using service_call_counters data)
-  - Webhook signature verification hardening
-]
+---
+
+## 4. Health Check
+
+A dedicated health-check endpoint should be implemented.
+
+Example:
+
+```text
+GET /health
+```
+
+The health check should verify application availability and, where appropriate:
+
+* PostgreSQL connectivity
+* Required infrastructure
+* Critical external dependencies
+
+This endpoint can later be used by:
+
+* Docker
+* Kubernetes
+* Load balancers
+* Deployment platforms
+
+---
+
+## 5. Integration Tests
+
+Integration tests must be added to verify communication between application components.
+
+Integration tests should cover:
+
+* Services + repositories
+* TypeORM + PostgreSQL
+* Database transactions
+* Payment persistence
+* Wallet transfer persistence
+* Payment state transitions
+* Migration compatibility
+
+Integration tests should use a dedicated test database and must never run against production data.
+
+---
+
+## 6. End-to-End Tests
+
+A complete E2E test suite should be added for the main payment scenarios.
 
 
-4. HOW TO PICK UP WORK
---------------------------
-- Start from DONE.txt to see what's implemented vs outstanding.
-- Read DESIGN.txt for the architecture and the two known gaps
-  (transaction boundary, callback vs polling).
-- Any new Paliz-facing logic should go through PalizPaymentService,
-  not PalizWalletService directly — this keeps the audit trail and
-  sequence_id handling consistent.
-- Any new endpoint that changes Payment/Invoice state should follow
-  the existing pattern in PaymentOrchestratorService: lock rows,
-  validate state, act, save within a single transaction.
+## 7. Retry Strategy
+
+A controlled retry mechanism should be added for transient external failures.
+
+Retries should:
+
+* Have a maximum retry count.
+* Use appropriate delays/backoff.
+* Avoid duplicating transfers.
+* Preserve unique IDs and sequence IDs.
+* Distinguish retryable errors from permanent failures.
+
+Payment operations must be idempotent.
+
+---
+
+## 8. CI/CD Pipeline
+
+A CI/CD pipeline should be added or completed.
+
+The pipeline should execute:
+
+```bash
+npm ci
+npm run build
+npm run lint
+npm run format:check
+npm test
+npm run test:e2e
+```
+
+A deployment should fail if any required validation step fails.
+
+Database migrations should also be validated before deployment.
+
+---
+
