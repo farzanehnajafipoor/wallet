@@ -15,7 +15,7 @@ import { PalizPaymentService } from './paliz-payment.service.js';
     TypeOrmModule.forFeature([Payment, Invoice, Wallet]),
     PalizWalletModule,
     PaymentGatewayModule,
-    WalletsModule
+    WalletsModule,
   ],
   controllers: [PaymentsController],
   providers: [PaymentOrchestratorService, PalizPaymentService],

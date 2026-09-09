@@ -14,22 +14,22 @@ export class PalizCallCounterService {
     const result = await this.repo.increment({ serviceId }, 'count', 1);
 
     if (result.affected === 0) {
-        const insertResult = await this.repo
+      const insertResult = await this.repo
         .createQueryBuilder()
         .insert()
         .values({ serviceId, count: '1' })
         .orIgnore()
         .execute();
 
-        const wasInserted = insertResult.identifiers.length > 0;
+      const wasInserted = insertResult.identifiers.length > 0;
 
-        if (!wasInserted) {
+      if (!wasInserted) {
         await this.repo.increment({ serviceId }, 'count', 1).catch(() => {});
-        }
+      }
     }
-    }
+  }
 
-async incrementAndGet(serviceId: string): Promise<number> {
+  async incrementAndGet(serviceId: string): Promise<number> {
     const result = await this.repo.query(
       `INSERT INTO service_call_counters ("serviceId", count, "updatedAt")
        VALUES ($1, 1, now())

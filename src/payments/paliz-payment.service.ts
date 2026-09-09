@@ -1,9 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { PalizWalletService, PalizRequestFailedException } from '../paliz-wallet/paliz-wallet.service.js';
+import {
+  PalizWalletService,
+  PalizRequestFailedException,
+} from '../paliz-wallet/paliz-wallet.service.js';
 import { PalizCallCounterService } from '../paliz-wallet/paliz-call-counter.service.js';
 import { PalizTransferService } from '../paliz-wallet/paliz-transfer.service.js';
-import { PalizTransferAction, PalizTransferStatus } from '../paliz-wallet/entities/paliz-transfer.entity.js';
+import {
+  PalizTransferAction,
+  PalizTransferStatus,
+} from '../paliz-wallet/entities/paliz-transfer.entity.js';
 
 @Injectable()
 export class PalizPaymentService {
@@ -18,6 +24,7 @@ export class PalizPaymentService {
     amount: number;
     callback: string;
     reference?: string;
+    reverse?: boolean;
   }) {
     const { serviceId } = this.palizWalletService.getWalletConfig();
     const uniqueId = randomUUID();
@@ -37,6 +44,7 @@ export class PalizPaymentService {
         amount: params.amount,
         callback: params.callback,
         reference: params.reference,
+        reverse: params.reverse,
       });
       await this.palizTransferService.markDelivered(record.id, result);
       return { ...result, uniqueId, sequenceId };
@@ -49,7 +57,9 @@ export class PalizPaymentService {
   }
 
   async commitTransfer(params: { paymentId: string; transactionPhrase: string }) {
-    const createRecord = await this.palizTransferService.findLatestCreateByPaymentId(params.paymentId);
+    const createRecord = await this.palizTransferService.findLatestCreateByPaymentId(
+      params.paymentId,
+    );
 
     if (!createRecord) {
       throw new Error(`No Paliz create-transfer record found for payment ${params.paymentId}`);
@@ -93,7 +103,9 @@ export class PalizPaymentService {
   }
 
   async cancelTransfer(params: { paymentId: string; transactionPhrase: string }) {
-    const createRecord = await this.palizTransferService.findLatestCreateByPaymentId(params.paymentId);
+    const createRecord = await this.palizTransferService.findLatestCreateByPaymentId(
+      params.paymentId,
+    );
 
     if (!createRecord) {
       throw new Error(`No Paliz create-transfer record found for payment ${params.paymentId}`);
@@ -136,7 +148,6 @@ export class PalizPaymentService {
     }
   }
 
-  /** Reconciliation for records stuck in PENDING/UNKNOWN — call this from a retry job. */
   async reconcile(paymentId: string) {
     const record = await this.palizTransferService.findLatestCreateByPaymentId(paymentId);
     if (!record) return null;
@@ -155,15 +166,17 @@ export class PalizPaymentService {
   }
 
   async getTransferInfo(params: { paymentId: string }) {
-  const createRecord = await this.palizTransferService.findLatestCreateByPaymentId(params.paymentId);
+    const createRecord = await this.palizTransferService.findLatestCreateByPaymentId(
+      params.paymentId,
+    );
 
-  if (!createRecord) {
-    throw new Error(`No Paliz create-transfer record found for payment ${params.paymentId}`);
+    if (!createRecord) {
+      throw new Error(`No Paliz create-transfer record found for payment ${params.paymentId}`);
+    }
+
+    // Read-only — does NOT touch the counter or write a new PalizTransfer row.
+    return this.palizWalletService.getTransferInfo({
+      tracking_id: (createRecord.response as Record<string, any>)?.tracking_id,
+    });
   }
-
-  // Read-only — does NOT touch the counter or write a new PalizTransfer row.
-  return this.palizWalletService.getTransferInfo({
-    tracking_id: (createRecord.response as Record<string, any>)?.tracking_id,
-  });
-}
 }

@@ -36,9 +36,7 @@ export class InvoicesService {
     const savedInvoice = await this.invoiceRepository.save(invoice);
 
     // Get latest wallet balance from Paliz
-    const walletBalance = await this.walletsService.getMyWalletBalance(
-      dto.mobile,
-    );
+    const walletBalance = await this.walletsService.getMyWalletBalance(dto.mobile);
 
     const invoiceAmount = Number(savedInvoice.amount);
 

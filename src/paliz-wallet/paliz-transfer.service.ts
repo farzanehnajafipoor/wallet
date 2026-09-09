@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { PalizTransfer, PalizTransferAction, PalizTransferStatus } from './entities/paliz-transfer.entity.js';
+import {
+  PalizTransfer,
+  PalizTransferAction,
+  PalizTransferStatus,
+} from './entities/paliz-transfer.entity.js';
 import { PalizRequestFailedException } from './paliz-wallet.service.js';
 
 @Injectable()
@@ -41,7 +45,8 @@ export class PalizTransferService {
 
   async markFailed(id: string, err: PalizRequestFailedException): Promise<void> {
     await this.repo.update(id, {
-      status: err.deliveryStatus === 'unknown' ? PalizTransferStatus.UNKNOWN : PalizTransferStatus.FAILED,
+      status:
+        err.deliveryStatus === 'unknown' ? PalizTransferStatus.UNKNOWN : PalizTransferStatus.FAILED,
       errorMessage: err.message,
       response: (err.cause ?? null) as Record<string, any> | any[] | null,
     });

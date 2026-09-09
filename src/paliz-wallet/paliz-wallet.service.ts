@@ -32,6 +32,7 @@ export class PalizWalletService {
     amount: number;
     callback?: string;
     reference?: string;
+    reverse?: boolean; // true = refund
   }) {
     const { serviceAddress, userAddress, currency, serviceId } = this.getWalletConfig();
 
@@ -40,8 +41,8 @@ export class PalizWalletService {
       sequence_id: data.sequence_id,
       action: 'create',
       data: {
-        from: userAddress,
-        to: serviceAddress,
+        from: data.reverse ? serviceAddress : userAddress,
+        to: data.reverse ? userAddress : serviceAddress,
         amount: data.amount,
         currency,
         callback: data.callback,
@@ -116,14 +117,12 @@ export class PalizWalletService {
     });
   }
 
-  async getTransferInfo(data: {
-    tracking_id: string;
-  }) {
+  async getTransferInfo(data: { tracking_id: string }) {
     const payload: Record<string, unknown> = {
       action: 'info',
       time: new Date().toISOString(),
     };
-    
+
     payload.tracking_id = data.tracking_id;
     return this.post('info', payload);
   }
@@ -146,9 +145,8 @@ export class PalizWalletService {
       const response = await firstValueFrom(
         this.httpService.post(`${baseUrl}/${action}`, payload, this.getAuthConfig()),
       );
-      console.log('response', response.data)
+      console.log('response', response.data);
       return response.data;
-      
     } catch (err) {
       const axiosErr = err as AxiosError;
 

@@ -9,15 +9,13 @@ import { PalizTransferService } from './paliz-transfer.service.js';
 import { PalizTransfer } from './entities/paliz-transfer.entity.js';
 
 @Module({
-  imports: [
-    HttpModule,
-    TypeOrmModule.forFeature([ServiceCallCounter, PalizTransfer]),
-  ],
-  providers: [PalizWalletService, PalizEncryptionService, PalizCallCounterService, PalizTransferService],
-  exports: [
+  imports: [HttpModule, TypeOrmModule.forFeature([ServiceCallCounter, PalizTransfer])],
+  providers: [
     PalizWalletService,
+    PalizEncryptionService,
     PalizCallCounterService,
     PalizTransferService,
   ],
+  exports: [PalizWalletService, PalizCallCounterService, PalizTransferService],
 })
 export class PalizWalletModule {}

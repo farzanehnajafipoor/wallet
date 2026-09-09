@@ -56,9 +56,7 @@ export class ShepaService implements PaymentGateway {
     };
   }
 
-  async verifyPayment(
-    input: VerifyPaymentInput,
-  ): Promise<VerifyPaymentOutput> {
+  async verifyPayment(input: VerifyPaymentInput): Promise<VerifyPaymentOutput> {
     const payload = {
       token: input.authority,
       amount: input.amount,
@@ -98,9 +96,7 @@ export class ShepaService implements PaymentGateway {
     };
   }
 
-  async refundPayment(
-    input: RefundPaymentInput,
-  ): Promise<RefundPaymentOutput> {
+  async refundPayment(input: RefundPaymentInput): Promise<RefundPaymentOutput> {
     const payload = {
       api: this.apiCode(),
       amount: input.amount,
@@ -117,9 +113,7 @@ export class ShepaService implements PaymentGateway {
     );
 
     if (!data.success || !data.result) {
-      throw new BadGatewayException(
-        `Shepa refund failed: ${this.formatErrors(data.errors)}`,
-      );
+      throw new BadGatewayException(`Shepa refund failed: ${this.formatErrors(data.errors)}`);
     }
 
     return {
@@ -139,9 +133,7 @@ export class ShepaService implements PaymentGateway {
   }
 
   private apiCode(): string {
-    return this.isSandbox()
-      ? 'sandbox'
-      : this.configService.getOrThrow<string>('SHEPA_API_KEY');
+    return this.isSandbox() ? 'sandbox' : this.configService.getOrThrow<string>('SHEPA_API_KEY');
   }
 
   private formatErrors(errors: string[] | string | undefined): string {

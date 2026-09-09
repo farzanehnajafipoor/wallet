@@ -10,13 +10,14 @@ export interface CreatePaymentRequestInput {
 }
 
 export interface CreatePaymentRequestOutput {
-  authority: string;     // gateway's reference for this attempt (Shepa: token)
-  redirectUrl: string;   // where to send the user's browser
+  authority: string;
+  redirectUrl: string;
 }
 
 export interface VerifyPaymentInput {
-  authority: string;     // same token/authority from createPaymentRequest
+  authority: string;
   amount: number;
+  token?: string;
 }
 
 export interface VerifyPaymentOutput {
@@ -26,7 +27,7 @@ export interface VerifyPaymentOutput {
   amount: number;
   cardPan?: string;
   paidAt?: Date;
-  raw: unknown;           // keep the raw response for debugging/audit
+  raw: unknown;
 }
 
 export interface RefundPaymentInput {
@@ -40,9 +41,7 @@ export interface RefundPaymentOutput {
 }
 
 export interface PaymentGateway {
-  createPaymentRequest(
-    input: CreatePaymentRequestInput,
-  ): Promise<CreatePaymentRequestOutput>;
+  createPaymentRequest(input: CreatePaymentRequestInput): Promise<CreatePaymentRequestOutput>;
 
   verifyPayment(input: VerifyPaymentInput): Promise<VerifyPaymentOutput>;
 

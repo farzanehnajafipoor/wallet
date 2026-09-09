@@ -1,16 +1,10 @@
-
-import {
-  Injectable,
-  NotFoundException,
-  BadGatewayException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadGatewayException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { User } from '../users/entities/user.entity.js';
 import { Wallet } from './entities/wallet.entity.js';
 import { PalizWalletService } from '../paliz-wallet/paliz-wallet.service.js';
-
 
 @Injectable()
 export class WalletsService {
@@ -36,19 +30,14 @@ export class WalletsService {
     return this.refreshWalletBalance(user.id);
   }
 
-  private async getPalizWalletBalance(
-    walletAddress: string,
-  ): Promise<number> {
+  private async getPalizWalletBalance(walletAddress: string): Promise<number> {
     try {
-       const palizResponse = await this.palizWalletService.getBalance({
-          address: walletAddress
-        });
-        return palizResponse.data.wallet_balance
-
+      const palizResponse = await this.palizWalletService.getBalance({
+        address: walletAddress,
+      });
+      return palizResponse.data.wallet_balance;
     } catch (error) {
-      throw new BadGatewayException(
-        'Unable to get wallet balance from Paliz',
-      );
+      throw new BadGatewayException(`Unable to get wallet balance from Paliz message:${error}`);
     }
   }
 
@@ -65,9 +54,7 @@ export class WalletsService {
       throw new NotFoundException('User wallet address not found');
     }
 
-    const balance = await this.getPalizWalletBalance(
-      user.walletAddress,
-    );
+    const balance = await this.getPalizWalletBalance(user.walletAddress);
 
     let wallet = await this.walletRepository.findOne({
       where: { userId },

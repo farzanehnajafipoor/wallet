@@ -7,10 +7,7 @@ import { InvoicesService } from './invoices.service.js';
 import { WalletsModule } from '../wallets/wallets.module.js';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Invoice, User]),
-    WalletsModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Invoice, User]), WalletsModule],
   controllers: [InvoicesController],
   providers: [InvoicesService],
 })
