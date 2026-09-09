@@ -8,6 +8,7 @@ export class PalizEncryptionService {
   constructor(private readonly configService: ConfigService) {}
 
   encrypt(payload: object): string {
+    console.log('input payload:',payload)
     const keyPath = this.configService.get<string>(
       'PALIZ_WALLET_PRIVATE_KEY_PATH',
     );

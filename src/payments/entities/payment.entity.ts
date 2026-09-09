@@ -67,19 +67,6 @@ export class Payment {
   @Column({ type: 'varchar', nullable: true })
   gatewayRedirectUrl: string | null;
 
-  // Paliz wallet fields
-  @Column({ type: 'varchar', unique: true, nullable: true })
-  palizUniqueId: string | null;
-
-  @Column({ type: 'varchar', nullable: true })
-  palizTrackingId: string | null;
-
-  @Column({ type: 'integer', default: 0 })
-  palizLastSequenceId: number;
-
-  @Column({ type: 'varchar', nullable: true })
-  palizTransactionPhrase: string | null;
-
   @CreateDateColumn()
   createdAt: Date;
 

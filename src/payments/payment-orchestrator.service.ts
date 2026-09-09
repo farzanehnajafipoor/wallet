@@ -6,28 +6,22 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EntityManager, DataSource } from 'typeorm';
-
 import {
   Invoice,
   InvoiceStatus,
 } from '../invoices/entities/invoice.entity.js';
-
 import { Wallet } from '../wallets/entities/wallet.entity.js';
-
 import {
   Payment,
   PaymentMethod,
   PaymentStatus,
 } from './entities/payment.entity.js';
-
 import {
   PAYMENT_GATEWAY,
 } from '../payment-gateway/payment-gateway.interface.js';
-
 import type {
   PaymentGateway,
 } from '../payment-gateway/payment-gateway.interface.js';
-
 import { WalletsService } from '../wallets/wallets.service.js';
 import { PalizPaymentService } from './paliz-payment.service.js';
 import { PalizWalletService } from '../paliz-wallet/paliz-wallet.service.js';
@@ -38,10 +32,8 @@ export class PaymentOrchestratorService {
     private readonly dataSource: DataSource,
     private readonly palizPaymentService: PalizPaymentService,
     private readonly palizWalletService: PalizWalletService,
-
     @Inject(PAYMENT_GATEWAY)
     private readonly paymentGateway: PaymentGateway,
-
     private readonly configService: ConfigService,
     private readonly walletsService: WalletsService,
   ) {}
@@ -53,10 +45,6 @@ export class PaymentOrchestratorService {
     console.log(
       `[Payment] START pay | invoiceId=${invoiceId} | method=${selectedMethod}`,
     );
-
-    // =========================================================
-    // 1. Load invoice
-    // =========================================================
 
     console.log(
       `[Payment] Loading invoice | invoiceId=${invoiceId}`,
@@ -93,10 +81,6 @@ export class PaymentOrchestratorService {
       );
     }
 
-    // =========================================================
-    // 2. Refresh wallet balance
-    // =========================================================
-
     console.log(
       `[Payment] Refreshing wallet balance | userId=${invoice.userId}`,
     );
@@ -110,10 +94,6 @@ export class PaymentOrchestratorService {
       `[Payment] Wallet balance refreshed | balance=${walletBalance}`,
     );
 
-    // =========================================================
-    // 3. Start DB transaction
-    // =========================================================
-
     console.log(
       `[Payment] Starting DB transaction | invoiceId=${invoiceId}`,
     );
@@ -122,10 +102,6 @@ export class PaymentOrchestratorService {
       console.log(
         `[Payment] Transaction started | invoiceId=${invoiceId}`,
       );
-
-      // =======================================================
-      // Lock invoice
-      // =======================================================
 
       console.log(
         `[Payment] Locking invoice | invoiceId=${invoiceId}`,
@@ -166,10 +142,6 @@ export class PaymentOrchestratorService {
         );
       }
 
-      // =======================================================
-      // Lock wallet
-      // =======================================================
-
       console.log(
         `[Payment] Locking wallet | userId=${lockedInvoice.userId}`,
       );
@@ -182,6 +154,7 @@ export class PaymentOrchestratorService {
           mode: 'pessimistic_write',
         },
       });
+
 
       if (!wallet) {
         console.log(
@@ -197,10 +170,6 @@ export class PaymentOrchestratorService {
         `[Payment] Wallet locked | balance=${wallet.balance}`,
       );
 
-      // =======================================================
-      // 4. Calculate payment amounts
-      // =======================================================
-
       const invoiceAmount =
         BigInt(lockedInvoice.amount);
 
@@ -208,37 +177,34 @@ export class PaymentOrchestratorService {
         BigInt(walletBalance);
 
       let walletAmount = 0n;
-let gatewayAmount = 0n;
+      let gatewayAmount = 0n;
 
-switch (selectedMethod) {
-  case PaymentMethod.WALLET:
-    walletAmount = invoiceAmount;
-    gatewayAmount = 0n;
-    break;
+      switch (selectedMethod) {
+        case PaymentMethod.WALLET:
+          walletAmount = invoiceAmount;
+          gatewayAmount = 0n;
+          break;
 
-  case PaymentMethod.GATEWAY:
-    walletAmount = 0n;
-    gatewayAmount = invoiceAmount;
-    break;
+        case PaymentMethod.GATEWAY:
+          walletAmount = 0n;
+          gatewayAmount = invoiceAmount;
+          break;
 
-  case PaymentMethod.COMBINED:
-    walletAmount =
-      currentWalletBalance < invoiceAmount
-        ? currentWalletBalance
-        : invoiceAmount;
+        case PaymentMethod.COMBINED:
+          walletAmount =
+            currentWalletBalance < invoiceAmount
+              ? currentWalletBalance
+              : invoiceAmount;
 
-    gatewayAmount = invoiceAmount - walletAmount;
-    break;
-}
+          gatewayAmount = invoiceAmount - walletAmount;
+          break;
+      }
 
       console.log(
         `[Payment] Amount calculation | invoice=${invoiceAmount} | wallet=${walletAmount} | gateway=${gatewayAmount}`,
       );
 
-      // =======================================================
-      // 5. Validate payment method
-      // =======================================================
-
+      
       console.log(
         `[Payment] Validating method | method=${selectedMethod}`,
       );
@@ -253,10 +219,7 @@ switch (selectedMethod) {
         `[Payment] Payment method validated`,
       );
 
-      // =======================================================
-      // 6. Find existing payment
-      // =======================================================
-
+      
       console.log(
         `[Payment] Looking for existing payment | invoiceId=${lockedInvoice.id}`,
       );
@@ -269,17 +232,13 @@ switch (selectedMethod) {
 
       if (payment) {
         console.log(
-          `[Payment] Existing payment found | paymentId=${payment.id} | status=${payment.status} | sequence=${payment.palizLastSequenceId}`,
+          `[Payment] Existing payment found | paymentId=${payment.id} | status=${payment.status} `,
         );
       } else {
         console.log(
           `[Payment] No existing payment found`,
         );
       }
-
-      // =======================================================
-      // Already successful
-      // =======================================================
 
       if (
         payment?.status ===
@@ -295,10 +254,6 @@ switch (selectedMethod) {
         };
       }
 
-      // =======================================================
-      // Already waiting for gateway
-      // =======================================================
-
       if (
         payment?.status ===
         PaymentStatus.AWAITING_GATEWAY
@@ -313,10 +268,6 @@ switch (selectedMethod) {
             payment.gatewayRedirectUrl ?? null,
         };
       }
-
-      // =======================================================
-      // 7. Create payment
-      // =======================================================
 
       if (!payment) {
         console.log(
@@ -347,13 +298,9 @@ switch (selectedMethod) {
         await manager.save(payment);
 
         console.log(
-          `[Payment] Payment created | paymentId=${payment.id} | status=${payment.status} | palizUniqueId=${payment.palizUniqueId}`,
+          `[Payment] Payment created | paymentId=${payment.id} | status=${payment.status} `,
         );
       }
-
-      // =========================================================
-      // WALLET
-      // =========================================================
 
       if (
         selectedMethod === PaymentMethod.WALLET
@@ -370,10 +317,6 @@ switch (selectedMethod) {
           walletAmount,
         );
       }
-
-      // =========================================================
-      // COMBINED
-      // =========================================================
 
       if (
         selectedMethod ===
@@ -393,10 +336,7 @@ switch (selectedMethod) {
         );
       }
 
-      // =========================================================
-      // GATEWAY
-      // =========================================================
-
+      
       console.log(
         `[Payment] FLOW=GATEWAY | paymentId=${payment.id}`,
       );
@@ -410,165 +350,111 @@ switch (selectedMethod) {
     });
   }
 
-  // =============================================================
-  // WALLET PAYMENT
-  // =============================================================
-
+  
   private async handleWalletPayment(
-    manager: EntityManager,
-    payment: Payment,
-    invoice: Invoice,
-    wallet: Wallet,
-    walletAmount: bigint,
-  ) {
-    console.log(
-      `[Payment][WALLET] START | paymentId=${payment.id}`,
-    );
+  manager: EntityManager,
+  payment: Payment,
+  invoice: Invoice,
+  wallet: Wallet,
+  walletAmount: bigint,
+) {
+  console.log(`[Payment][WALLET] START | paymentId=${payment.id}`);
 
-    // =========================================================
-    // Reserve wallet balance
-    // =========================================================
+  const oldWalletBalance = BigInt(wallet.balance);
+  const newWalletBalance = oldWalletBalance - walletAmount;
 
-    const oldWalletBalance =
-      BigInt(wallet.balance);
+  console.log(
+    `[Payment][WALLET] Reserving wallet | oldBalance=${oldWalletBalance} | amount=${walletAmount} | newBalance=${newWalletBalance}`,
+  );
 
-    const newWalletBalance =
-      oldWalletBalance - walletAmount;
+  wallet.balance = newWalletBalance.toString();
+  await manager.save(wallet);
 
-    console.log(
-      `[Payment][WALLET] Reserving wallet | oldBalance=${oldWalletBalance} | amount=${walletAmount} | newBalance=${newWalletBalance}`,
-    );
+  console.log(`[Payment][WALLET] Wallet balance updated to new`);
 
-    wallet.balance =
-      newWalletBalance.toString();
+  // =========================================================
+  // PALIZ CREATE
+  // =========================================================
 
-    await manager.save(wallet);
+  console.log(`[Payment][PALIZ] CREATE START | paymentId=${payment.id}`);
 
-    console.log(
-      `[Payment][WALLET] Wallet balance updated`,
-    );
+  const createResult = await this.palizPaymentService.createTransfer({
+    paymentId: payment.id,
+    amount: Number(walletAmount),
+    callback: `${this.callbackBase()}/payments/paliz/callback/${payment.id}`,
+    reference: invoice.id,
+  });
 
-    // =========================================================
-    // PALIZ CREATE
-    // =========================================================
+  console.log(
+    `[Payment][PALIZ] CREATE RESULT | result=${createResult} `,
+  );
+  
+  // =========================================================
+  // WAIT
+  // =========================================================
 
-    console.log(
-      `[Payment][PALIZ] CREATE START | paymentId=${payment.id} | nextSequence=${payment.palizLastSequenceId + 1}`,
-    );
+  console.log(`[Payment][PALIZ] Waiting 1500ms before INFO | paymentId=${payment.id}`);
+  await this.sleep(1500);
+  console.log(`[Payment][PALIZ] Wait completed | paymentId=${payment.id}`);
 
-    await this.palizPaymentService.createTransfer(
-      manager,
-      payment,
-      {
-        amount: Number(walletAmount),
-        invoiceId: invoice.id,
-        callback: `${this.callbackBase()}/payments/paliz/callback/${payment.id}`,
-      },
-    );
+  // =========================================================
+  // PALIZ INFO
+  // =========================================================
 
-    console.log(
-      `[Payment][PALIZ] CREATE SUCCESS | paymentId=${payment.id} | trackingId=${payment.palizTrackingId} | sequence=${payment.palizLastSequenceId}`,
-    );
+  console.log(`[Payment][PALIZ] INFO START | paymentId=${payment.id}`);
 
-    // =========================================================
-    // WAIT
-    // =========================================================
+  const info = await this.palizPaymentService.getTransferInfo({ paymentId: payment.id });
 
-    console.log(
-      `[Payment][PALIZ] Waiting 1500ms before INFO | paymentId=${payment.id}`,
-    );
+  console.log(
+    `[Payment][PALIZ] INFO RESPONSE | paymentId=${payment.id} | status=${info?.data?.status}`,
+  );
 
-    await this.sleep(1500);
+  // =========================================================
+  // FIRST COMMIT / CANCEL
+  // =========================================================
 
-    console.log(
-      `[Payment][PALIZ] Wait completed | paymentId=${payment.id}`,
-    );
+  if (info?.data?.status === 'firstcommit') {
+    console.log(`[Payment][PALIZ] STATUS=firstcommit → COMMIT | paymentId=${payment.id}`);
 
-    // =========================================================
-    // PALIZ INFO
-    // =========================================================
+    await this.palizPaymentService.commitTransfer({
+      paymentId: payment.id,
+      transactionPhrase: info.data.transaction_phrase,
+    });
 
-    console.log(
-      `[Payment][PALIZ] INFO START | paymentId=${payment.id} | trackingId=${payment.palizTrackingId} | nextSequence=${payment.palizLastSequenceId + 1}`,
-    );
+    console.log(`[Payment][PALIZ] COMMIT SUCCESS | paymentId=${payment.id}`);
 
-    const info =
-      await this.palizPaymentService.getTransferInfo(
-        manager,
-        payment,
-      );
+    payment.status = PaymentStatus.SUCCESS;
+    invoice.status = InvoiceStatus.PAID;
 
-    console.log(
-      `[Payment][PALIZ] INFO RESPONSE | paymentId=${payment.id} | status=${info?.data?.status} | sequence=${payment.palizLastSequenceId}`,
-    );
+    console.log(`[Payment][WALLET] SUCCESS | paymentId=${payment.id} | invoiceId=${invoice.id}`);
+  } else {
+    console.log(`[Payment][PALIZ] STATUS=${info?.data?.status} → CANCEL | paymentId=${payment.id}`);
 
-    // =========================================================
-    // FIRST COMMIT
-    // =========================================================
+    await this.palizPaymentService.cancelTransfer({
+      paymentId: payment.id,
+      transactionPhrase: info?.data?.transaction_phrase,
+    });
 
-    if (
-      info?.data?.status === 'firstcommit'
-    ) {
-      console.log(
-        `[Payment][PALIZ] STATUS=firstcommit → COMMIT | paymentId=${payment.id}`,
-      );
+    console.log(`[Payment][PALIZ] CANCEL SUCCESS | paymentId=${payment.id}`);
 
-      await this.palizPaymentService.commitTransfer(
-        manager,
-        payment,
-      );
+      wallet.balance = oldWalletBalance.toString();
+      await manager.save(wallet);
 
-      console.log(
-        `[Payment][PALIZ] COMMIT SUCCESS | paymentId=${payment.id} | sequence=${payment.palizLastSequenceId}`,
-      );
+      console.log(`[Payment][WALLET] Wallet balance updated to old`);
+    payment.status = PaymentStatus.FAILED;
 
-      payment.status =
-        PaymentStatus.SUCCESS;
-
-      invoice.status =
-        InvoiceStatus.PAID;
-
-      console.log(
-        `[Payment][WALLET] SUCCESS | paymentId=${payment.id} | invoiceId=${invoice.id}`,
-      );
-    } else {
-      // =======================================================
-      // CANCEL
-      // =======================================================
-
-      console.log(
-        `[Payment][PALIZ] STATUS=${info?.data?.status} → CANCEL | paymentId=${payment.id}`,
-      );
-
-      await this.palizPaymentService.cancelTransfer(
-        manager,
-        payment,
-      );
-
-      console.log(
-        `[Payment][PALIZ] CANCEL SUCCESS | paymentId=${payment.id} | sequence=${payment.palizLastSequenceId}`,
-      );
-
-      payment.status =
-        PaymentStatus.FAILED;
-
-      console.log(
-        `[Payment][WALLET] FAILED | paymentId=${payment.id}`,
-      );
-    }
-
-    await manager.save(payment);
-    await manager.save(invoice);
-
-    console.log(
-      `[Payment][WALLET] END | paymentId=${payment.id} | paymentStatus=${payment.status} | invoiceStatus=${invoice.status}`,
-    );
-
-    return {
-      payment,
-      redirectUrl: null,
-    };
+    console.log(`[Payment][WALLET] FAILED | paymentId=${payment.id}`);
   }
+
+  await manager.save(payment);
+  await manager.save(invoice);
+
+  console.log(
+    `[Payment][WALLET] END | paymentId=${payment.id} | paymentStatus=${payment.status} | invoiceStatus=${invoice.status}`,
+  );
+
+  return { payment, redirectUrl: null };
+}
 
   // =============================================================
   // COMBINED PAYMENT
@@ -614,21 +500,19 @@ switch (selectedMethod) {
     // =========================================================
 
     console.log(
-      `[Payment][PALIZ] CREATE START | paymentId=${payment.id} | nextSequence=${payment.palizLastSequenceId + 1}`,
+      `[Payment][PALIZ] CREATE START | paymentId=${payment.id} `,
     );
 
-    await this.palizPaymentService.createTransfer(
-      manager,
-      payment,
-      {
+    const createResult = await this.palizPaymentService.createTransfer({
+        paymentId: payment.id,
         amount: Number(walletAmount),
-        invoiceId: invoice.id,
         callback: `${this.callbackBase()}/payments/paliz/callback/${payment.id}`,
-      },
-    );
+        reference: invoice.id,
+      });
+
 
     console.log(
-      `[Payment][PALIZ] CREATE SUCCESS | paymentId=${payment.id} | trackingId=${payment.palizTrackingId} | sequence=${payment.palizLastSequenceId}`,
+      `[Payment][PALIZ] CREATE RESULT | result=${createResult}`,
     );
 
     payment.status =
@@ -734,73 +618,6 @@ switch (selectedMethod) {
       redirectUrl:
         gatewayRequest.redirectUrl,
     };
-  }
-
-  // =============================================================
-  // PALIZ INFO - DEBUG / READ ONLY
-  // =============================================================
-
-  async getPalizInfo(
-    paymentId: string,
-  ) {
-    console.log(
-      `[Payment][PALIZ][DEBUG] INFO REQUEST | paymentId=${paymentId}`,
-    );
-
-    const payment =
-      await this.dataSource.manager.findOne(
-        Payment,
-        {
-          where: {
-            id: paymentId,
-          },
-        },
-      );
-
-    if (!payment) {
-      console.log(
-        `[Payment][PALIZ][DEBUG] ERROR payment not found | paymentId=${paymentId}`,
-      );
-
-      throw new NotFoundException(
-        'Payment not found',
-      );
-    }
-
-    console.log(
-      `[Payment][PALIZ][DEBUG] Payment found | paymentId=${payment.id} | status=${payment.status} | trackingId=${payment.palizTrackingId} | lastSequence=${payment.palizLastSequenceId}`,
-    );
-
-    if (!payment.palizTrackingId) {
-      console.log(
-        `[Payment][PALIZ][DEBUG] ERROR missing tracking ID | paymentId=${paymentId}`,
-      );
-
-      throw new BadRequestException(
-        'Payment does not have a Paliz tracking ID',
-      );
-    }
-
-    // IMPORTANT:
-    // This is a READ-ONLY debug call.
-    // Do NOT use palizPaymentService.getTransferInfo()
-    // because that method increments the sequence.
-
-    console.log(
-      `[Payment][PALIZ][DEBUG] Calling Paliz INFO directly | paymentId=${paymentId} | trackingId=${payment.palizTrackingId} | lastSequence=${payment.palizLastSequenceId}`,
-    );
-
-    const response =
-      await this.palizWalletService.getTransferInfo({
-        tracking_id:
-          payment.palizTrackingId,
-      });
-
-    console.log(
-      `[Payment][PALIZ][DEBUG] INFO RESPONSE | paymentId=${paymentId} | status=${response?.data?.status} | lastSequence=${payment.palizLastSequenceId}`,
-    );
-
-    return response;
   }
 
   // =============================================================
