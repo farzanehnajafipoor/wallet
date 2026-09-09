@@ -142,3 +142,7 @@ Database migrations should also be validated before deployment.
 
 ---
 
+## 9. Direct wallet recharge
+
+## 10. Payment via bank
+

@@ -1,0 +1,26 @@
+3-Day Development Progress Report
+
+Day 1
+
+* Installed and configured all required software and development tools on the new laptop.
+* Reviewed and analyzed the test requirements and project specifications.
+* Created the initial project scaffold.
+* Created the User entity and User module.
+* Created the Wallet entity and Wallet module.
+
+Day 2
+
+* Implemented the main Payment Orchestrator to handle different payment methods and payment flows.
+* Implemented a service to integrate with and wrap the Paliz Wallet APIs.
+* Implemented a service to integrate with and wrap the Shepa Gateway APIs.
+* Implemented payment routes.
+* Implemented invoice routes.
+* Added Swagger documentation to the project.
+* Identified a critical issue related to sequence ID generation and handling.
+
+Day 3
+
+* Created an entity for storing Paliz transaction records with the correct sequence ID.
+* Updated the transaction design to support a public sequence ID.
+* Implemented the refund route to return funds to the user's wallet.
+* Created Markdown (.md) documentation files for the project.
